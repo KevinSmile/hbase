@@ -76,6 +76,9 @@ public class RegionsResource extends ResourceBase {
     servlet.getMetrics().incrementRequests(1);
     try {
       TableName tableName = TableName.valueOf(tableResource.getName());
+      if (!tableResource.exists()) {
+        throw new TableNotFoundException(tableName);
+      }
       TableInfoModel model = new TableInfoModel(tableName.getNameAsString());
 
       Connection connection = ConnectionFactory.createConnection(servlet.getConfiguration());
@@ -93,16 +96,9 @@ public class RegionsResource extends ResourceBase {
       response.cacheControl(cacheControl);
       servlet.getMetrics().incrementSucessfulGetRequests(1);
       return response.build();
-    } catch (TableNotFoundException e) {
+    } catch (Exception e) {
       servlet.getMetrics().incrementFailedGetRequests(1);
-      return Response.status(Response.Status.NOT_FOUND)
-        .type(MIMETYPE_TEXT).entity("Not found" + CRLF)
-        .build();
-    } catch (IOException e) {
-      servlet.getMetrics().incrementFailedGetRequests(1);
-      return Response.status(Response.Status.SERVICE_UNAVAILABLE)
-        .type(MIMETYPE_TEXT).entity("Unavailable" + CRLF)
-        .build();
+      return processException(e);
     }
   }
 }
